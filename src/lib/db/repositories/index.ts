@@ -1,0 +1,14 @@
+export { attendanceRepo } from "./attendance";
+export { attendanceEventsRepo } from "./attendance-events";
+export { courseComponentsRepo } from "./course-components";
+export { coursesRepo } from "./courses";
+export { holidaysRepo } from "./holidays";
+export { imagesRepo } from "./images";
+export { profileRepo } from "./profile";
+export { projectsRepo } from "./projects";
+export { projectTasksRepo } from "./project-tasks";
+export { routineRepo } from "./routine";
+export { scheduleEntriesRepo } from "./schedule-entries";
+export { settingsRepo } from "./settings";
+export { subjectsRepo } from "./subjects";
+export { todosRepo } from "./todos";
