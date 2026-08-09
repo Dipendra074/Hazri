@@ -48,10 +48,16 @@ It is designed around quick daily usage, offline-first storage and minimal inter
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/today.png" width="220">
-  <img src="docs/screenshots/subjects.png" width="220">
-  <img src="docs/screenshots/schedule.png" width="220">
-  <img src="docs/screenshots/settings.png" width="220">
+  <img src="docs/screenshots/today-attendance.webp" width="220" />
+  <img src="docs/screenshots/schedule.webp" width="220" />
+  <img src="docs/screenshots/attendance-overview.webp" width="220" />
+  <img src="docs/screenshots/attendance-calendar.webp" width="220" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/planner-projects.webp" width="220" />
+  <img src="docs/screenshots/planner-projects-angle.webp" width="220" />
+  <img src="docs/screenshots/profile-settings.webp" width="220" />
 </p>
 
 ---
