@@ -13,7 +13,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { PwaUpdater } from "@/components/pwa/update-toast";
-import { GitHubApkUpdater } from "@/components/native/github-apk-updater";
 import { NativeRuntime } from "@/components/native/native-runtime";
 
 function NotFoundComponent() {
@@ -163,7 +162,6 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <NativeRuntime />
-      <GitHubApkUpdater />
       <PwaUpdater />
       <Toaster
         theme="dark"
