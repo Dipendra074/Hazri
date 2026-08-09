@@ -58,7 +58,7 @@ It is designed around quick daily usage, offline-first storage and minimal inter
 <p align="center">
   <img src="docs/screenshots/planner.png" width="270" alt="Planner">
   &nbsp;&nbsp;
-  <img src="docs/screenshots/calendar.png" width="270" alt="Calendar">
+  <img src="docs/screenshots/calendar.webp" width="270" alt="Calendar">
 </p>
 
 ---
