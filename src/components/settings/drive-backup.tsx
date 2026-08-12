@@ -29,7 +29,10 @@ export function DriveBackupCard() {
   const reminder = shouldShowBackupReminder(status);
 
   return (
-    <section data-tour="drive-backup" className="rounded-3xl overflow-hidden p-px dark:bg-[linear-gradient(178deg,#7D7D7D_0%,#111111_65%)]">
+    <section
+      data-tour="drive-backup"
+      className="drive-accent-border rounded-3xl overflow-hidden p-px dark:bg-[linear-gradient(178deg,#7D7D7D_0%,#111111_65%)]"
+    >
       <div className="rounded-3xl bg-card border border-border dark:border-transparent dark:bg-[#111111]">
         <Link to="/drive-backup" className="block p-5">
           <div className="flex items-center gap-3">

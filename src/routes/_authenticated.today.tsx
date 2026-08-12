@@ -5,26 +5,54 @@ import { toast } from "sonner";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import {
-  ChevronLeft, ChevronRight, CalendarDays, Plus, MoreVertical,
-  Check, XCircle, Ban, Clock, BookOpen, Sparkles, Wallet, Trash2, PartyPopper, Pencil,
-  Power, MinusCircle, CheckCircle2, CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  Plus,
+  MoreVertical,
+  Check,
+  XCircle,
+  Ban,
+  Clock,
+  BookOpen,
+  Sparkles,
+  Wallet,
+  Trash2,
+  PartyPopper,
+  Pencil,
+  Power,
+  MinusCircle,
+  CheckCircle2,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -65,24 +93,30 @@ function parseLocalIso(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
-function todayIso() { return toLocalIso(new Date()); }
+function todayIso() {
+  return toLocalIso(new Date());
+}
 function addDays(iso: string, n: number) {
-  const d = parseLocalIso(iso); d.setDate(d.getDate() + n); return toLocalIso(d);
+  const d = parseLocalIso(iso);
+  d.setDate(d.getDate() + n);
+  return toLocalIso(d);
 }
 function fromMinutes(mins: number) {
-  const h = Math.floor(mins / 60), m = mins % 60;
+  const h = Math.floor(mins / 60),
+    m = mins % 60;
   const ampm = h >= 12 ? "PM" : "AM";
   const h12 = ((h + 11) % 12) + 1;
   return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 function nowMinutesLocal() {
-  const d = new Date(); return d.getHours() * 60 + d.getMinutes();
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
 }
 
 // ── generated class instance ────────────────────────────────────────
 type UiStatus = EventStatus | "pending";
 type Instance = {
-  key: string;                    // `${scheduleEntryId|extraEventId}:${date}`
+  key: string; // `${scheduleEntryId|extraEventId}:${date}`
   scheduleEntryId: string | null;
   isExtra: boolean;
   extraEventId: string | null;
@@ -123,13 +157,15 @@ function TodayPage() {
     smartRanRef.current = stamp;
     let cancelled = false;
     const go = () => {
-      runSmartPresent(session, prefs, { date }).then((r) => {
-        if (cancelled) return;
-        if (r.created > 0) {
-          toast.success(`Marked ${r.created} class${r.created === 1 ? "" : "es"} attended`);
-          qc.invalidateQueries({ queryKey: [...sessionKey(session), "attendance_events"] });
-        }
-      }).catch(() => {});
+      runSmartPresent(session, prefs, { date })
+        .then((r) => {
+          if (cancelled) return;
+          if (r.created > 0) {
+            toast.success(`Marked ${r.created} class${r.created === 1 ? "" : "es"} attended`);
+            qc.invalidateQueries({ queryKey: [...sessionKey(session), "attendance_events"] });
+          }
+        })
+        .catch(() => {});
     };
     go();
     const onFocus = () => {
@@ -188,10 +224,7 @@ function TodayPage() {
   const events = eventsQ.data ?? [];
   const holidays = holidaysQ.data ?? [];
 
-  const holiday = useMemo(
-    () => holidays.find((h) => h.date === date) ?? null,
-    [holidays, date],
-  );
+  const holiday = useMemo(() => holidays.find((h) => h.date === date) ?? null, [holidays, date]);
 
   const isToday = date === todayIso();
   const isFuture = parseLocalIso(date) > parseLocalIso(todayIso());
@@ -199,16 +232,21 @@ function TodayPage() {
 
   // Index helpers
   const coursesById = useMemo(() => {
-    const m = new Map<string, CourseRow>(); for (const c of courses) m.set(c.id, c); return m;
+    const m = new Map<string, CourseRow>();
+    for (const c of courses) m.set(c.id, c);
+    return m;
   }, [courses]);
   const componentsById = useMemo(() => {
-    const m = new Map<string, ComponentRow>(); for (const c of components) m.set(c.id, c); return m;
+    const m = new Map<string, ComponentRow>();
+    for (const c of components) m.set(c.id, c);
+    return m;
   }, [components]);
   const eventsByComponent = useMemo(() => {
     const m = new Map<string, AttendanceEventRow[]>();
     for (const e of events) {
       const arr = m.get(e.component_id) ?? [];
-      arr.push(e); m.set(e.component_id, arr);
+      arr.push(e);
+      m.set(e.component_id, arr);
     }
     return m;
   }, [events]);
@@ -226,14 +264,18 @@ function TodayPage() {
   const entriesByWeekday = useMemo(() => {
     const m = new Map<number, ScheduleEntryRow[]>();
     for (const e of entries) {
-      const arr = m.get(e.weekday) ?? []; arr.push(e); m.set(e.weekday, arr);
+      const arr = m.get(e.weekday) ?? [];
+      arr.push(e);
+      m.set(e.weekday, arr);
     }
     return m;
   }, [entries]);
   const eventsByDate = useMemo(() => {
     const m = new Map<string, AttendanceEventRow[]>();
     for (const e of events) {
-      const arr = m.get(e.date) ?? []; arr.push(e); m.set(e.date, arr);
+      const arr = m.get(e.date) ?? [];
+      arr.push(e);
+      m.set(e.date, arr);
     }
     return m;
   }, [events]);
@@ -244,8 +286,10 @@ function TodayPage() {
   }, [holidays]);
   const dayStatuses = useMemo(() => {
     const anchor = parseLocalIso(date);
-    const start = new Date(anchor); start.setDate(start.getDate() - 120);
-    const end = new Date(anchor); end.setDate(end.getDate() + 120);
+    const start = new Date(anchor);
+    start.setDate(start.getDate() - 120);
+    const end = new Date(anchor);
+    end.setDate(end.getDate() + 120);
     const toIso = (d: Date) => {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -253,8 +297,13 @@ function TodayPage() {
       return `${y}-${m}-${day}`;
     };
     const info = aggregateRange(
-      toIso(start), toIso(end),
-      entriesByWeekday, eventsByDate, componentsById, holidaysByDate, todayIso(),
+      toIso(start),
+      toIso(end),
+      entriesByWeekday,
+      eventsByDate,
+      componentsById,
+      holidaysByDate,
+      todayIso(),
     );
     const out = new Map<string, DayStatus>();
     for (const [iso, di] of info) out.set(iso, di.status);
@@ -317,7 +366,7 @@ function TodayPage() {
         component: comp,
         kind: comp.kind,
         startMinute: ev.start_minute ?? 0,
-        endMinute: ev.end_minute ?? (ev.start_minute ?? 0),
+        endMinute: ev.end_minute ?? ev.start_minute ?? 0,
         units: ev.units,
         position: 9999,
         targetPct: Number(course.target_pct),
@@ -360,9 +409,7 @@ function TodayPage() {
   }, [visibleInstances, isToday, isFuture]);
 
   const effectiveExpanded =
-    expandedKey && visibleInstances.some((i) => i.key === expandedKey)
-      ? expandedKey
-      : defaultKey;
+    expandedKey && visibleInstances.some((i) => i.key === expandedKey) ? expandedKey : defaultKey;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: [...sessionKey(session), "attendance_events"] });
@@ -374,11 +421,7 @@ function TodayPage() {
       // Extra events: pending must remain a persisted event.
       if (inst.isExtra) {
         const target: UiStatus =
-          status === "pending"
-            ? "pending"
-            : inst.status === status
-              ? "pending"
-              : status;
+          status === "pending" ? "pending" : inst.status === status ? "pending" : status;
         if (!inst.extraEventId) return;
         await attendanceEventsApi.update(session, inst.extraEventId, {
           status: target as EventStatus,
@@ -395,7 +438,7 @@ function TodayPage() {
         return;
       }
       const existing = inst.scheduleEntryId
-        ? eventBySlotDate.get(`${inst.scheduleEntryId}:${inst.date}`) ?? null
+        ? (eventBySlotDate.get(`${inst.scheduleEntryId}:${inst.date}`) ?? null)
         : null;
       if (existing) {
         await attendanceEventsApi.update(session, existing.id, {
@@ -422,11 +465,16 @@ function TodayPage() {
   });
 
   const anyLoading =
-    coursesQ.isLoading || compsQ.isLoading || entriesQ.isLoading ||
-    eventsQ.isLoading || holidaysQ.isLoading;
+    coursesQ.isLoading ||
+    compsQ.isLoading ||
+    entriesQ.isLoading ||
+    eventsQ.isLoading ||
+    holidaysQ.isLoading;
 
   const dateLabel = parseLocalIso(date).toLocaleDateString(undefined, {
-    weekday: "long", day: "2-digit", month: "short",
+    weekday: "long",
+    day: "2-digit",
+    month: "short",
   });
 
   const hasCourses = courses.length > 0;
@@ -441,7 +489,10 @@ function TodayPage() {
         <button
           type="button"
           aria-label="Previous day"
-          onClick={() => { setDate(addDays(date, -1)); setExpandedKey(null); }}
+          onClick={() => {
+            setDate(addDays(date, -1));
+            setExpandedKey(null);
+          }}
           className="h-8 w-8 rounded-full bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -450,7 +501,8 @@ function TodayPage() {
           type="button"
           aria-label="Pick a date"
           onClick={() => {
-            const a = parseLocalIso(date); a.setDate(1);
+            const a = parseLocalIso(date);
+            a.setDate(1);
             setCalendarAnchor(a);
             setCalendarOpen(true);
           }}
@@ -480,7 +532,10 @@ function TodayPage() {
         {!isToday && (
           <button
             type="button"
-            onClick={() => { setDate(todayIso()); setExpandedKey(null); }}
+            onClick={() => {
+              setDate(todayIso());
+              setExpandedKey(null);
+            }}
             className="rounded-full bg-primary px-2 py-1 text-[11px] font-medium text-white hover:bg-primary/90"
           >
             Today
@@ -489,7 +544,10 @@ function TodayPage() {
         <button
           type="button"
           aria-label="Next day"
-          onClick={() => { setDate(addDays(date, 1)); setExpandedKey(null); }}
+          onClick={() => {
+            setDate(addDays(date, 1));
+            setExpandedKey(null);
+          }}
           className="h-8 w-8 rounded-full bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center"
         >
           <ChevronRight className="h-4 w-4" />
@@ -567,27 +625,42 @@ function TodayPage() {
           icon={BookOpen}
           title="Add your first course"
           hint="Create a course to start tracking attendance."
-          cta={<Link to="/courses" className="inline-flex items-center gap-1 h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            <Plus className="h-4 w-4" /> Add Course
-          </Link>}
+          cta={
+            <Link
+              to="/courses"
+              className="inline-flex items-center gap-1 h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium"
+            >
+              <Plus className="h-4 w-4" /> Add Course
+            </Link>
+          }
         />
       ) : !hasSchedule ? (
         <EmptyState
           icon={CalendarDays}
           title="No weekly schedule yet"
           hint="Slot your classes into the weekly timetable to see them here."
-          cta={<Link to="/schedule" className="inline-flex items-center gap-1 h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            Open Schedule
-          </Link>}
+          cta={
+            <Link
+              to="/schedule"
+              className="inline-flex items-center gap-1 h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium"
+            >
+              Open Schedule
+            </Link>
+          }
         />
       ) : !hasScheduleForDay && instances.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
           title="No scheduled classes today"
           hint="Add classes for this weekday in Schedule."
-          cta={<Link to="/schedule" className="inline-flex items-center gap-1 h-10 px-4 rounded-full bg-secondary text-foreground text-sm font-medium">
-            Open Schedule
-          </Link>}
+          cta={
+            <Link
+              to="/schedule"
+              className="inline-flex items-center gap-1 h-10 px-4 rounded-full bg-secondary text-foreground text-sm font-medium"
+            >
+              Open Schedule
+            </Link>
+          }
         />
       ) : visibleInstances.length === 0 ? (
         <EmptyState
@@ -617,27 +690,39 @@ function TodayPage() {
             );
           })}
 
-          {isToday || (!isFuture && !isToday) ? (
-            pendingInstances.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setBulkOpen(true)}
-                className="w-full mt-2 rounded-2xl bg-card border border-border p-3 text-sm font-medium text-muted-foreground hover:text-foreground flex items-center justify-center gap-2"
-              >
-                <Check className="h-4 w-4" /> Mark remaining as attended
-              </button>
-            )
-          ) : null}
+          {isToday || (!isFuture && !isToday)
+            ? pendingInstances.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setBulkOpen(true)}
+                  className="w-full mt-2 rounded-2xl bg-card border border-border p-3 text-sm font-medium text-muted-foreground hover:text-foreground flex items-center justify-center gap-2"
+                >
+                  <Check className="h-4 w-4" /> Mark remaining as attended
+                </button>
+              )
+            : null}
         </div>
       )}
 
       <AddSheet
         open={addOpen}
         onOpenChange={setAddOpen}
-        onAddExtra={() => { setAddOpen(false); setExtraOpen(true); }}
-        onAddCredit={() => { setAddOpen(false); setCreditOpen(true); }}
-        onViewCredits={() => { setAddOpen(false); setCreditsListOpen(true); }}
-        onMarkHoliday={() => { setAddOpen(false); setHolidayOpen(true); }}
+        onAddExtra={() => {
+          setAddOpen(false);
+          setExtraOpen(true);
+        }}
+        onAddCredit={() => {
+          setAddOpen(false);
+          setCreditOpen(true);
+        }}
+        onViewCredits={() => {
+          setAddOpen(false);
+          setCreditsListOpen(true);
+        }}
+        onMarkHoliday={() => {
+          setAddOpen(false);
+          setHolidayOpen(true);
+        }}
       />
       <HolidaySheet
         open={holidayOpen}
@@ -654,7 +739,12 @@ function TodayPage() {
       />
       <ExtraSheet
         open={extraOpen || !!editExtra}
-        onOpenChange={(o) => { if (!o) { setExtraOpen(false); setEditExtra(null); } }}
+        onOpenChange={(o) => {
+          if (!o) {
+            setExtraOpen(false);
+            setEditExtra(null);
+          }
+        }}
         session={session}
         courses={courses}
         components={components}
@@ -663,7 +753,12 @@ function TodayPage() {
       />
       <CreditSheet
         open={creditOpen || !!editCredit}
-        onOpenChange={(o) => { if (!o) { setCreditOpen(false); setEditCredit(null); } }}
+        onOpenChange={(o) => {
+          if (!o) {
+            setCreditOpen(false);
+            setEditCredit(null);
+          }
+        }}
         session={session}
         courses={courses}
         components={components}
@@ -676,12 +771,17 @@ function TodayPage() {
         events={events}
         coursesById={coursesById}
         componentsById={componentsById}
-        onEdit={(ev) => { setCreditsListOpen(false); setEditCredit(ev); }}
+        onEdit={(ev) => {
+          setCreditsListOpen(false);
+          setEditCredit(ev);
+        }}
         onDelete={(ev) => setDeleteCredit(ev)}
       />
       <ConfirmDialog
         open={!!deleteExtra}
-        onOpenChange={(o) => { if (!o) setDeleteExtra(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDeleteExtra(null);
+        }}
         title="Delete extra class?"
         description="This removes the extra class and its attendance from statistics."
         confirmLabel="Delete"
@@ -700,7 +800,9 @@ function TodayPage() {
       />
       <ConfirmDialog
         open={!!deleteCredit}
-        onOpenChange={(o) => { if (!o) setDeleteCredit(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDeleteCredit(null);
+        }}
         title="Delete credit?"
         description="This removes the adjustment from statistics."
         confirmLabel="Delete"
@@ -745,9 +847,11 @@ function badgeStyles(kind: ComponentKind): string {
   }[kind];
 }
 function statusPillStyles(s: UiStatus): { cls: string; label: string } {
-  if (s === "attended") return { cls: "bg-green-500/15 text-green-400 ring-green-500/30", label: "Attended" };
+  if (s === "attended")
+    return { cls: "bg-green-500/15 text-green-400 ring-green-500/30", label: "Attended" };
   if (s === "missed") return { cls: "bg-red-500/15 text-red-400 ring-red-500/30", label: "Missed" };
-  if (s === "cancelled") return { cls: "bg-amber-500/15 text-amber-400 ring-amber-500/30", label: "Cancelled" };
+  if (s === "cancelled")
+    return { cls: "bg-amber-500/15 text-amber-400 ring-amber-500/30", label: "Cancelled" };
   return { cls: "bg-muted text-muted-foreground ring-border", label: "Pending" };
 }
 function pctColor(stats: ComponentStats) {
@@ -764,7 +868,14 @@ function pctBar(stats: ComponentStats) {
 }
 
 function ExpandedCard({
-  instance, stats, canMark, pending, animate, onMark, onEditExtra, onDeleteExtra,
+  instance,
+  stats,
+  canMark,
+  pending,
+  animate,
+  onMark,
+  onEditExtra,
+  onDeleteExtra,
 }: {
   instance: Instance;
   stats: ComponentStats;
@@ -779,10 +890,13 @@ function ExpandedCard({
   const pctText = stats.percentage === null ? "—" : `${stats.percentage.toFixed(0)}%`;
   const insight = shortInsight(stats, instance.targetPct);
   const standing =
-    stats.status === "safe" ? { text: "Good standing", dot: "bg-[#6F7DEC]" }
-    : stats.status === "warn" ? { text: "Watch closely", dot: "bg-amber-400" }
-    : stats.status === "danger" ? { text: "Below target", dot: "bg-red-500" }
-    : { text: "No data yet", dot: "bg-muted-foreground" };
+    stats.status === "safe"
+      ? { text: "Good standing", dot: "bg-[#6F7DEC]" }
+      : stats.status === "warn"
+        ? { text: "Watch closely", dot: "bg-amber-400" }
+        : stats.status === "danger"
+          ? { text: "Below target", dot: "bg-red-500" }
+          : { text: "No data yet", dot: "bg-muted-foreground" };
   const insightMsg =
     stats.percentage === null
       ? "No classes recorded yet."
@@ -790,11 +904,14 @@ function ExpandedCard({
         ? "Great job! You're above the required attendance."
         : insight;
   const pctFrac = stats.percentage === null ? 0 : Math.max(0, Math.min(1, stats.percentage / 100));
-  const displayPct = stats.percentage === null ? null : Math.max(0, Math.min(100, stats.percentage));
+  const displayPct =
+    stats.percentage === null ? null : Math.max(0, Math.min(100, stats.percentage));
   const subjectTagColor =
-    instance.kind === "lab" ? "bg-[#6FEC71] text-[#1D1E29] border-[#6FEC71]"
-    : instance.kind === "tutorial" ? "bg-[#ECDF6F]/15 text-[#ECDF6F] border-[#ECDF6F]/30"
-    : "bg-[#3C7CFF] text-white border-[#3C7CFF]";
+    instance.kind === "lab"
+      ? "bg-[#6FEC71] text-[#1D1E29] border-[#6FEC71]"
+      : instance.kind === "tutorial"
+        ? "bg-[#ECDF6F]/15 text-[#ECDF6F] border-[#ECDF6F]/30"
+        : "bg-[#3C7CFF] text-white border-[#3C7CFF]";
   const pctRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
@@ -807,8 +924,7 @@ function ExpandedCard({
       const cached = animatedPctCache.get(instance.key);
       // No animation when the value hasn't changed since last render
       // (e.g. returning to Today after navigating away).
-      const shouldAnimate =
-        animate && (cached === undefined ? true : cached !== targetPct);
+      const shouldAnimate = animate && (cached === undefined ? true : cached !== targetPct);
       const fromPct = cached ?? 0;
       animatedPctCache.set(instance.key, targetPct);
 
@@ -824,8 +940,7 @@ function ExpandedCard({
             duration: 0.7,
             ease: "power2.out",
             onUpdate: () => {
-              if (pctRef.current)
-                pctRef.current.textContent = `${Math.round(obj.v)}%`;
+              if (pctRef.current) pctRef.current.textContent = `${Math.round(obj.v)}%`;
             },
           });
         }
@@ -858,7 +973,11 @@ function ExpandedCard({
           {(onEditExtra || onDeleteExtra) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" aria-label="Extra actions" className="p-1 text-muted-foreground/70 hover:text-foreground">
+                <button
+                  type="button"
+                  aria-label="Extra actions"
+                  className="p-1 text-muted-foreground/70 hover:text-foreground"
+                >
                   <MoreVertical className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
@@ -869,7 +988,10 @@ function ExpandedCard({
                   </DropdownMenuItem>
                 )}
                 {onDeleteExtra && (
-                  <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={onDeleteExtra}>
+                  <DropdownMenuItem
+                    className="text-red-500 focus:text-red-500"
+                    onClick={onDeleteExtra}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </DropdownMenuItem>
                 )}
@@ -879,83 +1001,121 @@ function ExpandedCard({
         </div>
       )}
       {/* Figma source of truth: every measurement scales from a 388×150 canvas. */}
-      <div data-tour="subject-card" className="rounded-[6.186cqw] p-px bg-[linear-gradient(178deg,#7D7D7D_0%,#1D1E29_65%)]">
       <div
-        data-testid="today-subject-card"
-        className="relative aspect-[388/150] w-full overflow-hidden rounded-[6.186cqw] bg-[#1D1E29]"
+        data-tour="subject-card"
+        className="rounded-[6.186cqw] p-px bg-[linear-gradient(178deg,#7D7D7D_0%,#1D1E29_65%)]"
       >
-        <SubjectIcon
-          icon={Icon}
-          className="absolute left-[2.577cqw] top-[3.608cqw] h-[14.948cqw] w-[15.464cqw] rounded-[4.381cqw]"
-          iconClassName="h-[7.227cqw] w-[6.054cqw]"
-        />
-
-        <div className="absolute left-[20.876cqw] top-[4.381cqw] w-[41.495cqw]">
-          <div
-            className="h-[7.474cqw] truncate whitespace-nowrap text-[6.264cqw] font-normal leading-[7.474cqw] tracking-[-0.02em] text-white"
-            title={instance.course.name}
-          >
-            {instance.course.name}
-          </div>
-          <div className="absolute left-[0.773cqw] top-[7.216cqw] h-[3.351cqw] w-[32.99cqw] truncate lowercase text-[2.835cqw] font-normal leading-[3.351cqw] tracking-[0.03em] text-[#9F9F9F]">
-            {insight}
-          </div>
-        </div>
-        {instance.kind !== "theory" && (
-        <span
-          className={`absolute left-[10.309cqw] top-[21.907cqw] inline-flex h-[3.866cqw] min-w-[6.701cqw] -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-[1.031cqw] border px-[1.031cqw] font-semibold leading-none tracking-wide ${subjectTagColor} ${
-            instance.kind === "lab" ? "text-[3.24cqw]" : "text-[2.2cqw]"
-          }`}
-        >
-          {instance.kind.toUpperCase()}
-        </span>
-        )}
-
-
-        <div className="absolute left-[21.649cqw] top-[21.649cqw] h-[2.835cqw] w-[13.144cqw] whitespace-nowrap text-[2.32cqw] font-normal leading-[2.835cqw] tracking-[0.03em] text-[#9F9F9F]">
-          Attended - {stats.attended}
-        </div>
-        <div className="absolute left-[21.649cqw] top-[24.485cqw] h-[2.835cqw] w-[11.082cqw] whitespace-nowrap text-[2.32cqw] font-normal leading-[2.835cqw] tracking-[0.03em] text-[#9F9F9F]">
-          Missed - {stats.missed}
-        </div>
-
-        <div className="absolute left-[66.302cqw] top-[6.508cqw] h-[17.655cqw] w-[0.5px] bg-[#545454]" />
-
-        <div className="absolute left-[69.588cqw] top-[5.67cqw] h-[0.773cqw] w-[25cqw] overflow-hidden rounded-full bg-[#474747]">
-          <div
-            ref={barRef}
-            className="h-full w-[78.351%] origin-left rounded-full bg-[#6F7DEC]"
-            style={{ transform: "scaleX(0)" }}
-          />
-        </div>
         <div
-          ref={pctRef}
-          data-testid="today-subject-percentage"
-          data-tour="attendance-percent"
-          className="absolute left-[69.072cqw] top-[7.474cqw] mt-[2px] flex h-[8.505cqw] w-[29.897cqw] items-center gap-0 rounded-none whitespace-nowrap font-mingzat text-[10.529cqw] font-normal leading-[22.165cqw] tracking-[-0.08em] text-[#7C8AFF] tabular-nums"
+          data-testid="today-subject-card"
+          className="relative aspect-[388/150] w-full overflow-hidden rounded-[6.186cqw] bg-[#1D1E29]"
         >
-          {pctText}
-        </div>
-        <div className="absolute left-[69.845cqw] top-[17.783cqw] flex h-[2.835cqw] items-center whitespace-nowrap">
-          <span className={`h-[1.26cqw] w-[1.26cqw] shrink-0 rounded-full ${standing.dot}`} />
-          <span className="ml-[0.629cqw] text-[2.429cqw] font-normal leading-[2.835cqw] tracking-[0.02em] text-white">
-            {standing.text}
-          </span>
-        </div>
+          <SubjectIcon
+            icon={Icon}
+            className="absolute left-[2.577cqw] top-[3.608cqw] h-[14.948cqw] w-[15.464cqw] rounded-[4.381cqw]"
+            iconClassName="h-[7.227cqw] w-[6.054cqw]"
+          />
 
-        <div data-tour="attendance-actions" className="absolute left-[1.031cqw] top-[29.124cqw] grid h-[7.99cqw] w-[97.165cqw] grid-cols-4 gap-[2.062cqw]">
-          <FigmaPill active={instance.status === "pending"} disabled={!canMark || pending} onClick={() => onMark("pending")} icon={<Sparkles />} label="Clear" activeCls="border-white/25 bg-white/10" />
-          <FigmaPill active={instance.status === "cancelled"} disabled={!canMark || pending} onClick={() => onMark("cancelled")} icon={<Power />} label="Off" activeCls="border-amber-400/50 bg-amber-500/25" />
-          <FigmaPill active={instance.status === "missed"} disabled={!canMark || pending} onClick={() => onMark("missed")} icon={<MinusCircle />} label="Missed" activeCls="border-red-400/50 bg-red-500/25" />
-          <FigmaPill active={instance.status === "attended"} disabled={!canMark || pending} onClick={() => onMark("attended")} icon={<CheckCircle2 />} label="Attended" activeCls="border-emerald-400/50 bg-emerald-500/25" />
+          <div className="absolute left-[20.876cqw] top-[4.381cqw] w-[41.495cqw]">
+            <div
+              className="h-[7.474cqw] truncate whitespace-nowrap text-[6.264cqw] font-normal leading-[7.474cqw] tracking-[-0.02em] text-white"
+              title={instance.course.name}
+            >
+              {instance.course.name}
+            </div>
+            <div className="absolute left-[0.773cqw] top-[7.216cqw] h-[3.351cqw] w-[32.99cqw] truncate lowercase text-[2.835cqw] font-normal leading-[3.351cqw] tracking-[0.03em] text-[#9F9F9F]">
+              {insight}
+            </div>
+          </div>
+          {instance.kind !== "theory" && (
+            <span
+              className={`absolute left-[10.309cqw] top-[21.907cqw] inline-flex h-[3.866cqw] min-w-[6.701cqw] -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-[1.031cqw] border px-[1.031cqw] font-semibold leading-none tracking-wide ${subjectTagColor} ${
+                instance.kind === "lab" ? "text-[3.24cqw]" : "text-[2.2cqw]"
+              }`}
+            >
+              {instance.kind.toUpperCase()}
+            </span>
+          )}
+
+          <div className="absolute left-[21.649cqw] top-[21.649cqw] h-[2.835cqw] w-[13.144cqw] whitespace-nowrap text-[2.32cqw] font-normal leading-[2.835cqw] tracking-[0.03em] text-[#9F9F9F]">
+            Attended - {stats.attended}
+          </div>
+          <div className="absolute left-[21.649cqw] top-[24.485cqw] h-[2.835cqw] w-[11.082cqw] whitespace-nowrap text-[2.32cqw] font-normal leading-[2.835cqw] tracking-[0.03em] text-[#9F9F9F]">
+            Missed - {stats.missed}
+          </div>
+
+          <div className="absolute left-[66.302cqw] top-[6.508cqw] h-[17.655cqw] w-[0.5px] bg-[#545454]" />
+
+          <div className="absolute left-[69.588cqw] top-[5.67cqw] h-[0.773cqw] w-[25cqw] overflow-hidden rounded-full bg-[#474747]">
+            <div
+              ref={barRef}
+              className="h-full w-full origin-left rounded-full bg-[#6F7DEC]"
+              style={{ transform: "scaleX(0)" }}
+            />
+          </div>
+          <div
+            ref={pctRef}
+            data-testid="today-subject-percentage"
+            data-tour="attendance-percent"
+            className="absolute left-[69.072cqw] top-[7.474cqw] mt-[2px] flex h-[8.505cqw] w-[29.897cqw] items-center gap-0 rounded-none whitespace-nowrap font-mingzat text-[10.529cqw] font-normal leading-[22.165cqw] tracking-[-0.08em] text-[#7C8AFF] tabular-nums"
+          >
+            {pctText}
+          </div>
+          <div className="absolute left-[69.845cqw] top-[17.783cqw] flex h-[2.835cqw] items-center whitespace-nowrap">
+            <span className={`h-[1.26cqw] w-[1.26cqw] shrink-0 rounded-full ${standing.dot}`} />
+            <span className="ml-[0.629cqw] text-[2.429cqw] font-normal leading-[2.835cqw] tracking-[0.02em] text-white">
+              {standing.text}
+            </span>
+          </div>
+
+          <div
+            data-tour="attendance-actions"
+            className="absolute left-[1.031cqw] top-[29.124cqw] grid h-[7.99cqw] w-[97.165cqw] grid-cols-4 gap-[2.062cqw]"
+          >
+            <FigmaPill
+              active={instance.status === "pending"}
+              disabled={!canMark || pending}
+              onClick={() => onMark("pending")}
+              icon={<Sparkles />}
+              label="Clear"
+              activeCls="border-white/25 bg-white/10"
+            />
+            <FigmaPill
+              active={instance.status === "cancelled"}
+              disabled={!canMark || pending}
+              onClick={() => onMark("cancelled")}
+              icon={<Power />}
+              label="Off"
+              activeCls="border-amber-400/50 bg-amber-500/25"
+            />
+            <FigmaPill
+              active={instance.status === "missed"}
+              disabled={!canMark || pending}
+              onClick={() => onMark("missed")}
+              icon={<MinusCircle />}
+              label="Missed"
+              activeCls="border-red-400/50 bg-red-500/25"
+            />
+            <FigmaPill
+              active={instance.status === "attended"}
+              disabled={!canMark || pending}
+              onClick={() => onMark("attended")}
+              icon={<CheckCircle2 />}
+              label="Attended"
+              activeCls="border-emerald-400/50 bg-emerald-500/25"
+            />
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );
 }
 function FigmaPill({
-  active, disabled, onClick, icon, label, activeCls,
+  active,
+  disabled,
+  onClick,
+  icon,
+  label,
+  activeCls,
 }: {
   active: boolean;
   disabled: boolean;
@@ -983,19 +1143,17 @@ function FigmaPill({
   );
 }
 function StatusButtons({
-  status, canMark, pending, onMark,
+  status,
+  canMark,
+  pending,
+  onMark,
 }: {
   status: UiStatus;
   canMark: boolean;
   pending: boolean;
   onMark: (s: UiStatus) => void;
 }) {
-  const btn = (
-    key: UiStatus,
-    label: string,
-    icon: React.ReactNode,
-    activeCls: string,
-  ) => {
+  const btn = (key: UiStatus, label: string, icon: React.ReactNode, activeCls: string) => {
     const isActive = status === key;
     return (
       <button
@@ -1005,9 +1163,7 @@ function StatusButtons({
         aria-pressed={isActive}
         aria-label={label}
         className={`h-8 rounded-full text-[11px] font-normal flex items-center justify-center gap-1.5 text-white/90 transition disabled:opacity-40 ring-1 ${
-          isActive
-            ? activeCls
-            : "bg-black/40 ring-white/5 hover:bg-black/60"
+          isActive ? activeCls : "bg-black/40 ring-white/5 hover:bg-black/60"
         }`}
       >
         <span className="[&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span>
@@ -1026,7 +1182,14 @@ function StatusButtons({
 }
 
 function CompactRow({
-  instance, stats, onExpand, canMark, pending, onMark, onEditExtra, onDeleteExtra,
+  instance,
+  stats,
+  onExpand,
+  canMark,
+  pending,
+  onMark,
+  onEditExtra,
+  onDeleteExtra,
 }: {
   instance: Instance;
   stats: ComponentStats;
@@ -1057,21 +1220,30 @@ function CompactRow({
                 EXTRA
               </span>
             )}
-            <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded ring-1 font-semibold ${badgeStyles(instance.kind)}`}>
+            <span
+              className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded ring-1 font-semibold ${badgeStyles(instance.kind)}`}
+            >
               {instance.kind.toUpperCase()}
             </span>
           </div>
           <div className="mt-0.5 text-[11px] text-muted-foreground flex items-center gap-1.5 tabular-nums">
             <Clock className="h-3 w-3" />
             {fromMinutes(instance.startMinute)}–{fromMinutes(instance.endMinute)}
-            {instance.units > 1 && <><span className="opacity-60">·</span><span>{instance.units}u</span></>}
+            {instance.units > 1 && (
+              <>
+                <span className="opacity-60">·</span>
+                <span>{instance.units}u</span>
+              </>
+            )}
             <span className="opacity-60">·</span>
             <span className={`px-1.5 py-0.5 rounded ring-1 text-[9px] font-semibold ${pill.cls}`}>
               {pill.label}
             </span>
           </div>
         </div>
-        <div className={`shrink-0 pr-[11px] text-sm font-semibold tabular-nums ${pctColor(stats)}`}>{pctText}</div>
+        <div className={`shrink-0 pr-[11px] text-sm font-semibold tabular-nums ${pctColor(stats)}`}>
+          {pctText}
+        </div>
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -1119,7 +1291,10 @@ function CompactRow({
 }
 
 function EmptyState({
-  icon: Icon, title, hint, cta,
+  icon: Icon,
+  title,
+  hint,
+  cta,
 }: {
   icon: typeof BookOpen;
   title: string;
@@ -1173,7 +1348,12 @@ function SkeletonList() {
 
 // ── Add sheet ────────────────────────────────────────────────────────
 function AddSheet({
-  open, onOpenChange, onMarkHoliday, onAddExtra, onAddCredit, onViewCredits,
+  open,
+  onOpenChange,
+  onMarkHoliday,
+  onAddExtra,
+  onAddCredit,
+  onViewCredits,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -1251,7 +1431,9 @@ function AddSheet({
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium">Mark date as holiday</div>
-              <div className="text-[11px] text-muted-foreground">Suppresses generated classes for this date</div>
+              <div className="text-[11px] text-muted-foreground">
+                Suppresses generated classes for this date
+              </div>
             </div>
           </button>
         </div>
@@ -1261,10 +1443,20 @@ function AddSheet({
 }
 
 function AddRow({
-  icon: Icon, title, hint, disabled,
-}: { icon: typeof Sparkles; title: string; hint: string; disabled?: boolean }) {
+  icon: Icon,
+  title,
+  hint,
+  disabled,
+}: {
+  icon: typeof Sparkles;
+  title: string;
+  hint: string;
+  disabled?: boolean;
+}) {
   return (
-    <div className={`w-full rounded-2xl bg-card border border-border p-3 flex items-center gap-3 ${disabled ? "opacity-50" : ""}`}>
+    <div
+      className={`w-full rounded-2xl bg-card border border-border p-3 flex items-center gap-3 ${disabled ? "opacity-50" : ""}`}
+    >
       <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center">
         <Icon className="h-4 w-4" />
       </div>
@@ -1278,7 +1470,11 @@ function AddRow({
 
 // ── Holiday sheet ───────────────────────────────────────────────────
 function HolidaySheet({
-  open, onOpenChange, session, date, existing,
+  open,
+  onOpenChange,
+  session,
+  date,
+  existing,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -1334,10 +1530,15 @@ function HolidaySheet({
         </SheetHeader>
         <form
           className="mt-4 space-y-3 pb-6"
-          onSubmit={(e) => { e.preventDefault(); save.mutate(); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            save.mutate();
+          }}
         >
           <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-            <Label htmlFor="h-date" className="text-xs text-muted-foreground">Date</Label>
+            <Label htmlFor="h-date" className="text-xs text-muted-foreground">
+              Date
+            </Label>
             <Input
               id="h-date"
               type="date"
@@ -1348,7 +1549,9 @@ function HolidaySheet({
             />
           </div>
           <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-            <Label htmlFor="h-label" className="text-xs text-muted-foreground">Title (optional)</Label>
+            <Label htmlFor="h-label" className="text-xs text-muted-foreground">
+              Title (optional)
+            </Label>
             <Input
               id="h-label"
               value={label}
@@ -1400,7 +1603,10 @@ async function removeHoliday(
 
 // ── Bulk-mark sheet ─────────────────────────────────────────────────
 function BulkMarkSheet({
-  open, onOpenChange, instances, session,
+  open,
+  onOpenChange,
+  instances,
+  session,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -1410,7 +1616,10 @@ function BulkMarkSheet({
   const qc = useQueryClient();
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [seeded, setSeeded] = useState(false);
-  if (open && !seeded) { setSeeded(true); setPicked(new Set(instances.map((i) => i.key))); }
+  if (open && !seeded) {
+    setSeeded(true);
+    setPicked(new Set(instances.map((i) => i.key)));
+  }
   if (!open && seeded) setSeeded(false);
 
   const confirm = useMutation({
@@ -1466,7 +1675,8 @@ function BulkMarkSheet({
                   checked={on}
                   onCheckedChange={(v) => {
                     const next = new Set(picked);
-                    if (v) next.add(inst.key); else next.delete(inst.key);
+                    if (v) next.add(inst.key);
+                    else next.delete(inst.key);
                     setPicked(next);
                   }}
                 />
@@ -1477,7 +1687,8 @@ function BulkMarkSheet({
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{inst.course.name}</div>
                   <div className="text-[11px] text-muted-foreground tabular-nums">
-                    {inst.kind.toUpperCase()} · {fromMinutes(inst.startMinute)}–{fromMinutes(inst.endMinute)}
+                    {inst.kind.toUpperCase()} · {fromMinutes(inst.startMinute)}–
+                    {fromMinutes(inst.endMinute)}
                     {inst.units > 1 && ` · ${inst.units}u`}
                   </div>
                 </div>
@@ -1490,9 +1701,7 @@ function BulkMarkSheet({
             disabled={confirm.isPending || picked.size === 0 || instances.length === 0}
             onClick={() => confirm.mutate()}
           >
-            {confirm.isPending
-              ? "Marking…"
-              : `Confirm (${picked.size}/${instances.length})`}
+            {confirm.isPending ? "Marking…" : `Confirm (${picked.size}/${instances.length})`}
           </Button>
         </div>
       </SheetContent>
@@ -1503,7 +1712,8 @@ function BulkMarkSheet({
 // ── Helpers for time inputs ─────────────────────────────────────────
 function minutesToHHMM(mins: number | null | undefined): string {
   if (mins == null) return "";
-  const h = Math.floor(mins / 60), m = mins % 60;
+  const h = Math.floor(mins / 60),
+    m = mins % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 function hhmmToMinutes(s: string): number | null {
@@ -1515,7 +1725,13 @@ function hhmmToMinutes(s: string): number | null {
 
 // ── Extra class sheet ───────────────────────────────────────────────
 function ExtraSheet({
-  open, onOpenChange, session, courses, components, defaultDate, editing,
+  open,
+  onOpenChange,
+  session,
+  courses,
+  components,
+  defaultDate,
+  editing,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -1583,7 +1799,8 @@ function ExtraSheet({
       const em = hhmmToMinutes(endTime);
       if (sm == null || em == null) throw new Error("Enter valid times");
       if (em <= sm) throw new Error("End time must be after start time");
-      if (!Number.isInteger(units) || units < 1) throw new Error("Units must be a positive whole number");
+      if (!Number.isInteger(units) || units < 1)
+        throw new Error("Units must be a positive whole number");
       let finalStatus: EventStatus = status as EventStatus;
       if (isFutureDate && (finalStatus === "attended" || finalStatus === "missed")) {
         finalStatus = "pending";
@@ -1637,46 +1854,90 @@ function ExtraSheet({
         ) : (
           <form
             className="mt-4 space-y-3 pb-6"
-            onSubmit={(e) => { e.preventDefault(); save.mutate(); }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              save.mutate();
+            }}
           >
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
               <Label className="text-xs text-muted-foreground">Course</Label>
               <Select value={courseId} onValueChange={setCourseId}>
-                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Course" /></SelectTrigger>
+                <SelectTrigger className="h-10 rounded-xl">
+                  <SelectValue placeholder="Course" />
+                </SelectTrigger>
                 <SelectContent>
                   {activeCourses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
               <Label className="text-xs text-muted-foreground">Component</Label>
-              <Select value={componentId} onValueChange={setComponentId} disabled={compsForCourse.length === 0}>
-                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Component" /></SelectTrigger>
+              <Select
+                value={componentId}
+                onValueChange={setComponentId}
+                disabled={compsForCourse.length === 0}
+              >
+                <SelectTrigger className="h-10 rounded-xl">
+                  <SelectValue placeholder="Component" />
+                </SelectTrigger>
                 <SelectContent>
                   {compsForCourse.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.kind[0].toUpperCase() + c.kind.slice(1)}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.kind[0].toUpperCase() + c.kind.slice(1)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-              <Label htmlFor="ex-date" className="text-xs text-muted-foreground">Date</Label>
-              <Input id="ex-date" type="date" value={dateVal} onChange={(e) => setDateVal(e.target.value)} className="h-10 rounded-xl" required />
+              <Label htmlFor="ex-date" className="text-xs text-muted-foreground">
+                Date
+              </Label>
+              <Input
+                id="ex-date"
+                type="date"
+                value={dateVal}
+                onChange={(e) => setDateVal(e.target.value)}
+                className="h-10 rounded-xl"
+                required
+              />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-                <Label htmlFor="ex-start" className="text-xs text-muted-foreground">Start</Label>
-                <Input id="ex-start" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-10 rounded-xl" required />
+                <Label htmlFor="ex-start" className="text-xs text-muted-foreground">
+                  Start
+                </Label>
+                <Input
+                  id="ex-start"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="h-10 rounded-xl"
+                  required
+                />
               </div>
               <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-                <Label htmlFor="ex-end" className="text-xs text-muted-foreground">End</Label>
-                <Input id="ex-end" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-10 rounded-xl" required />
+                <Label htmlFor="ex-end" className="text-xs text-muted-foreground">
+                  End
+                </Label>
+                <Input
+                  id="ex-end"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="h-10 rounded-xl"
+                  required
+                />
               </div>
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-              <Label htmlFor="ex-units" className="text-xs text-muted-foreground">Attendance units</Label>
+              <Label htmlFor="ex-units" className="text-xs text-muted-foreground">
+                Attendance units
+              </Label>
               <div className="flex items-center gap-2">
                 {[1, 2, 3].map((n) => (
                   <button
@@ -1712,7 +1973,9 @@ function ExtraSheet({
                       disabled={disabled}
                       onClick={() => setStatus(s)}
                       className={`h-9 rounded-full text-xs font-medium capitalize disabled:opacity-40 ${
-                        active ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                        active
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground"
                       }`}
                     >
                       {s}
@@ -1725,8 +1988,16 @@ function ExtraSheet({
               )}
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-              <Label htmlFor="ex-note" className="text-xs text-muted-foreground">Note (optional)</Label>
-              <Textarea id="ex-note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="rounded-xl" />
+              <Label htmlFor="ex-note" className="text-xs text-muted-foreground">
+                Note (optional)
+              </Label>
+              <Textarea
+                id="ex-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                className="rounded-xl"
+              />
             </div>
             <Button type="submit" className="w-full rounded-full h-11" disabled={save.isPending}>
               {save.isPending ? "Saving…" : editing ? "Save changes" : "Add extra class"}
@@ -1740,7 +2011,13 @@ function ExtraSheet({
 
 // ── Credit sheet ────────────────────────────────────────────────────
 function CreditSheet({
-  open, onOpenChange, session, courses, components, defaultDate, editing,
+  open,
+  onOpenChange,
+  session,
+  courses,
+  components,
+  defaultDate,
+  editing,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -1798,7 +2075,8 @@ function CreditSheet({
   const save = useMutation({
     mutationFn: async () => {
       if (!componentId) throw new Error("Choose a component");
-      if (!Number.isInteger(units) || units < 1) throw new Error("Units must be a positive whole number");
+      if (!Number.isInteger(units) || units < 1)
+        throw new Error("Units must be a positive whole number");
       if (editing) {
         await attendanceEventsApi.update(session, editing.id, {
           component_id: componentId,
@@ -1847,36 +2125,62 @@ function CreditSheet({
         ) : (
           <form
             className="mt-4 space-y-3 pb-6"
-            onSubmit={(e) => { e.preventDefault(); save.mutate(); }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              save.mutate();
+            }}
           >
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
               <Label className="text-xs text-muted-foreground">Course</Label>
               <Select value={courseId} onValueChange={setCourseId}>
-                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Course" /></SelectTrigger>
+                <SelectTrigger className="h-10 rounded-xl">
+                  <SelectValue placeholder="Course" />
+                </SelectTrigger>
                 <SelectContent>
                   {activeCourses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
               <Label className="text-xs text-muted-foreground">Component</Label>
-              <Select value={componentId} onValueChange={setComponentId} disabled={compsForCourse.length === 0}>
-                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Component" /></SelectTrigger>
+              <Select
+                value={componentId}
+                onValueChange={setComponentId}
+                disabled={compsForCourse.length === 0}
+              >
+                <SelectTrigger className="h-10 rounded-xl">
+                  <SelectValue placeholder="Component" />
+                </SelectTrigger>
                 <SelectContent>
                   {compsForCourse.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.kind[0].toUpperCase() + c.kind.slice(1)}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.kind[0].toUpperCase() + c.kind.slice(1)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-              <Label htmlFor="cr-date" className="text-xs text-muted-foreground">Date</Label>
-              <Input id="cr-date" type="date" value={dateVal} onChange={(e) => setDateVal(e.target.value)} className="h-10 rounded-xl" required />
+              <Label htmlFor="cr-date" className="text-xs text-muted-foreground">
+                Date
+              </Label>
+              <Input
+                id="cr-date"
+                type="date"
+                value={dateVal}
+                onChange={(e) => setDateVal(e.target.value)}
+                className="h-10 rounded-xl"
+                required
+              />
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-              <Label htmlFor="cr-units" className="text-xs text-muted-foreground">Credit units</Label>
+              <Label htmlFor="cr-units" className="text-xs text-muted-foreground">
+                Credit units
+              </Label>
               <div className="flex items-center gap-2">
                 {[1, 2, 3].map((n) => (
                   <button
@@ -1901,14 +2205,30 @@ function CreditSheet({
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <Label htmlFor="cr-count" className="text-sm">Counts as conducted</Label>
-                <p className="text-[11px] text-muted-foreground">Off increases attended only; percentage caps at 100%.</p>
+                <Label htmlFor="cr-count" className="text-sm">
+                  Counts as conducted
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Off increases attended only; percentage caps at 100%.
+                </p>
               </div>
-              <Switch id="cr-count" checked={countsAsConducted} onCheckedChange={setCountsAsConducted} />
+              <Switch
+                id="cr-count"
+                checked={countsAsConducted}
+                onCheckedChange={setCountsAsConducted}
+              />
             </div>
             <div className="rounded-2xl bg-card border border-border p-3 space-y-2">
-              <Label htmlFor="cr-note" className="text-xs text-muted-foreground">Reason (optional)</Label>
-              <Textarea id="cr-note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="rounded-xl" />
+              <Label htmlFor="cr-note" className="text-xs text-muted-foreground">
+                Reason (optional)
+              </Label>
+              <Textarea
+                id="cr-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                className="rounded-xl"
+              />
             </div>
             <Button type="submit" className="w-full rounded-full h-11" disabled={save.isPending}>
               {save.isPending ? "Saving…" : editing ? "Save changes" : "Add credit"}
@@ -1922,7 +2242,13 @@ function CreditSheet({
 
 // ── Credits list sheet ──────────────────────────────────────────────
 function CreditsListSheet({
-  open, onOpenChange, events, coursesById, componentsById, onEdit, onDelete,
+  open,
+  onOpenChange,
+  events,
+  coursesById,
+  componentsById,
+  onEdit,
+  onDelete,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -1933,9 +2259,10 @@ function CreditsListSheet({
   onDelete: (ev: AttendanceEventRow) => void;
 }) {
   const credits = useMemo(
-    () => events
-      .filter((e) => (e.event_type ?? (e.status === "credit" ? "credit" : "class")) === "credit")
-      .sort((a, b) => (a.date < b.date ? 1 : -1)),
+    () =>
+      events
+        .filter((e) => (e.event_type ?? (e.status === "credit" ? "credit" : "class")) === "credit")
+        .sort((a, b) => (a.date < b.date ? 1 : -1)),
     [events],
   );
   return (
@@ -1952,7 +2279,10 @@ function CreditsListSheet({
             const comp = componentsById.get(ev.component_id);
             const course = comp ? coursesById.get(comp.course_id) : undefined;
             return (
-              <div key={ev.id} className="rounded-2xl bg-card border border-border p-3 flex items-center gap-3">
+              <div
+                key={ev.id}
+                className="rounded-2xl bg-card border border-border p-3 flex items-center gap-3"
+              >
                 <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center">
                   <Wallet className="h-4 w-4" />
                 </div>
@@ -1993,7 +2323,12 @@ function CreditsListSheet({
 
 // ── Confirm dialog ──────────────────────────────────────────────────
 function ConfirmDialog({
-  open, onOpenChange, title, description, confirmLabel, onConfirm,
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -2011,10 +2346,7 @@ function ConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            className="bg-red-600 text-white hover:bg-red-700"
-            onClick={onConfirm}
-          >
+          <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={onConfirm}>
             {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

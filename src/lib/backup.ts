@@ -34,11 +34,10 @@ import { isAndroidApp } from "@/lib/platform";
 import type { StoreNames } from "idb";
 
 export const BACKUP_FORMAT = "hazri-backup";
-export const CURRENT_FORMAT_VERSION = 2;
+export const CURRENT_FORMAT_VERSION = 3;
 export const APP_VERSION =
   (typeof import.meta !== "undefined" &&
-    (import.meta as unknown as { env?: Record<string, string> }).env
-      ?.VITE_APP_VERSION) ||
+    (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_APP_VERSION) ||
   "dev";
 
 type OwnedStore = Extract<
@@ -112,6 +111,8 @@ export interface BackupImage {
   dataBase64: string;
 }
 
+export type BackupKind = "full" | "timetable";
+
 export interface BackupFile {
   format: typeof BACKUP_FORMAT;
   formatVersion: number;
@@ -121,6 +122,7 @@ export interface BackupFile {
   exportedAt: string;
   backupId: string;
   ownerId: string;
+  backupKind: BackupKind;
   checksum?: string;
   counts: BackupCounts;
   data: {
@@ -172,25 +174,27 @@ function base64ToBlob(b64: string, mime: string): Blob {
 
 export function isCompressionSupported(): boolean {
   return (
-    typeof (globalThis as unknown as { CompressionStream?: unknown })
-      .CompressionStream === "function"
+    typeof (globalThis as unknown as { CompressionStream?: unknown }).CompressionStream ===
+    "function"
   );
 }
 
 async function gzipEncode(bytes: Uint8Array): Promise<Uint8Array> {
-  const cs = new (globalThis as unknown as {
-    CompressionStream: new (fmt: string) => TransformStream<Uint8Array, Uint8Array>;
-  }).CompressionStream("gzip");
+  const cs = new (
+    globalThis as unknown as {
+      CompressionStream: new (fmt: string) => TransformStream<Uint8Array, Uint8Array>;
+    }
+  ).CompressionStream("gzip");
   const stream = new Blob([new Uint8Array(bytes)]).stream().pipeThrough(cs);
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
 async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
-  const ds = new (globalThis as unknown as {
-    DecompressionStream: new (
-      fmt: string,
-    ) => TransformStream<Uint8Array, Uint8Array>;
-  }).DecompressionStream("gzip");
+  const ds = new (
+    globalThis as unknown as {
+      DecompressionStream: new (fmt: string) => TransformStream<Uint8Array, Uint8Array>;
+    }
+  ).DecompressionStream("gzip");
   const stream = new Blob([new Uint8Array(bytes)]).stream().pipeThrough(ds);
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
@@ -218,21 +222,13 @@ function canonicalJson(v: unknown): string {
   return (
     "{" +
     keys
-      .map(
-        (k) =>
-          JSON.stringify(k) +
-          ":" +
-          canonicalJson((v as Record<string, unknown>)[k]),
-      )
+      .map((k) => JSON.stringify(k) + ":" + canonicalJson((v as Record<string, unknown>)[k]))
       .join(",") +
     "}"
   );
 }
 
-async function computeChecksum(
-  data: BackupFile["data"],
-  images: BackupImage[],
-): Promise<string> {
+async function computeChecksum(data: BackupFile["data"], images: BackupImage[]): Promise<string> {
   const hex = await sha256Hex(canonicalJson({ data, images }));
   return `sha256:${hex}`;
 }
@@ -244,10 +240,7 @@ async function computeChecksum(
 export async function detectHasLocalData(ownerId: string): Promise<boolean> {
   const db = await getDB();
   for (const store of LIVE_DATA_STORES) {
-    const key = await db
-      .transaction(store)
-      .store.index("byOwner")
-      .getKey(ownerId);
+    const key = await db.transaction(store).store.index("byOwner").getKey(ownerId);
     if (key !== undefined) return true;
   }
   const profile = await db.get(STORE.profile, ownerId);
@@ -354,10 +347,52 @@ export async function exportGuestBackup(ownerId: string): Promise<BackupFile> {
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     ownerId,
+    backupKind: "full",
     checksum,
     counts,
     data,
     images: encodedImages,
+  };
+}
+
+/** A shareable timetable excludes personal data and attendance history. */
+export async function exportTimetableBackup(ownerId: string): Promise<BackupFile> {
+  const full = await exportGuestBackup(ownerId);
+  const data: BackupFile["data"] = {
+    ...full.data,
+    profile: null,
+    settings: [],
+    attendance_events: [],
+    holidays: [],
+    projects: [],
+    project_tasks: [],
+    todos: [],
+    subjects: [],
+    attendance_logs: [],
+    routine_slots: [],
+  };
+  const images = full.images.filter((image) => image.kind === "timetable");
+  const counts: BackupCounts = {
+    ...full.counts,
+    subjects: 0,
+    attendanceLogs: 0,
+    routineSlots: 0,
+    projects: 0,
+    projectTasks: 0,
+    todos: 0,
+    settings: 0,
+    attendanceEvents: 0,
+    holidays: 0,
+    images: images.length,
+  };
+
+  return {
+    ...full,
+    backupKind: "timetable",
+    data,
+    images,
+    counts,
+    checksum: await computeChecksum(data, images),
   };
 }
 
@@ -369,16 +404,12 @@ function stamp(now = new Date()): string {
   );
 }
 
-export async function downloadGuestBackup(ownerId: string): Promise<string> {
-  const backup = await exportGuestBackup(ownerId);
+async function downloadBackup(backup: BackupFile): Promise<string> {
   const json = JSON.stringify(backup);
   const useGzip = isCompressionSupported();
-  const filename = useGzip
-    ? `Hazri-Backup-${stamp()}.hazri`
-    : `Hazri-Backup-${stamp()}.json`;
-  const body = useGzip
-    ? new Uint8Array(await gzipEncode(new TextEncoder().encode(json)))
-    : json;
+  const prefix = backup.backupKind === "timetable" ? "Hazri-Timetable" : "Hazri-Backup";
+  const filename = useGzip ? `${prefix}-${stamp()}.hazri` : `${prefix}-${stamp()}.json`;
+  const body = useGzip ? new Uint8Array(await gzipEncode(new TextEncoder().encode(json))) : json;
   const mime = useGzip ? "application/gzip" : "application/json";
 
   if (isAndroidApp()) {
@@ -414,6 +445,14 @@ export async function downloadGuestBackup(ownerId: string): Promise<string> {
   return filename;
 }
 
+export async function downloadGuestBackup(ownerId: string): Promise<string> {
+  return downloadBackup(await exportGuestBackup(ownerId));
+}
+
+export async function downloadTimetableBackup(ownerId: string): Promise<string> {
+  return downloadBackup(await exportTimetableBackup(ownerId));
+}
+
 /* -------------------------------------------------------------------------- */
 /* validate + parse                                                           */
 /* -------------------------------------------------------------------------- */
@@ -441,8 +480,7 @@ function normalizeAndValidate(parsed: unknown): BackupFile {
     throw new BackupValidationError("Not a Hazri backup file.");
   }
 
-  const legacyVersion =
-    typeof parsed.version === "number" ? parsed.version : undefined;
+  const legacyVersion = typeof parsed.version === "number" ? parsed.version : undefined;
   const rawFormatVersion =
     typeof parsed.formatVersion === "number"
       ? parsed.formatVersion
@@ -458,9 +496,7 @@ function normalizeAndValidate(parsed: unknown): BackupFile {
     );
   }
   if (rawFormatVersion < 1) {
-    throw new BackupValidationError(
-      `Unsupported backup formatVersion ${rawFormatVersion}.`,
-    );
+    throw new BackupValidationError(`Unsupported backup formatVersion ${rawFormatVersion}.`);
   }
 
   if (typeof parsed.ownerId !== "string" || !parsed.ownerId) {
@@ -505,15 +541,12 @@ function normalizeAndValidate(parsed: unknown): BackupFile {
     }
   }
 
-  const dbName =
-    typeof parsed.databaseName === "string" ? parsed.databaseName : DB_NAME;
+  const dbName = typeof parsed.databaseName === "string" ? parsed.databaseName : DB_NAME;
   if (dbName !== DB_NAME) {
     throw new BackupValidationError(`Unexpected databaseName '${dbName}'.`);
   }
   const dbVersion =
-    typeof parsed.databaseVersion === "number"
-      ? parsed.databaseVersion
-      : DB_VERSION;
+    typeof parsed.databaseVersion === "number" ? parsed.databaseVersion : DB_VERSION;
   if (dbVersion > DB_VERSION) {
     throw new BackupValidationError(
       "This backup was created by a newer database version of Hazri. Update Hazri before importing it.",
@@ -541,14 +574,12 @@ function normalizeAndValidate(parsed: unknown): BackupFile {
     formatVersion: rawFormatVersion,
     databaseName: dbName,
     databaseVersion: dbVersion,
-    appVersion:
-      typeof parsed.appVersion === "string" ? parsed.appVersion : "unknown",
+    appVersion: typeof parsed.appVersion === "string" ? parsed.appVersion : "unknown",
     exportedAt:
-      typeof parsed.exportedAt === "string"
-        ? parsed.exportedAt
-        : new Date(0).toISOString(),
+      typeof parsed.exportedAt === "string" ? parsed.exportedAt : new Date(0).toISOString(),
     backupId: typeof parsed.backupId === "string" ? parsed.backupId : "",
     ownerId: parsed.ownerId,
+    backupKind: parsed.backupKind === "timetable" ? "timetable" : "full",
     checksum: typeof parsed.checksum === "string" ? parsed.checksum : undefined,
     counts,
     data: data as BackupFile["data"],
@@ -568,9 +599,7 @@ export async function readBackupFile(file: File): Promise<BackupFile> {
   let jsonText: string;
   if (isGzip(bytes)) {
     if (!isCompressionSupported()) {
-      throw new BackupValidationError(
-        "This browser cannot open compressed .hazri backups.",
-      );
+      throw new BackupValidationError("This browser cannot open compressed .hazri backups.");
     }
     try {
       const decoded = await gzipDecode(bytes);
@@ -669,15 +698,10 @@ async function clearOwnerRows(ownerId: string): Promise<void> {
   revokeAllImageUrls();
 }
 
-async function writeBackupContents(
-  backup: BackupFile,
-  targetOwnerId: string,
-): Promise<void> {
+async function writeBackupContents(backup: BackupFile, targetOwnerId: string): Promise<void> {
   const db = await getDB();
 
-  const profile = backup.data.profile as
-    | (Record<string, unknown> & { id?: string })
-    | null;
+  const profile = backup.data.profile as (Record<string, unknown> & { id?: string }) | null;
   if (profile && isRecord(profile)) {
     await db.put(STORE.profile, { ...profile, id: targetOwnerId } as never);
   }
@@ -700,9 +724,7 @@ async function writeBackupContents(
       const tx = db.transaction(name, "readwrite");
       for (const row of rows) {
         if (isRecord(row)) {
-          await tx.store.put(
-            reownRow(row as { ownerId?: string }, targetOwnerId) as never,
-          );
+          await tx.store.put(reownRow(row as { ownerId?: string }, targetOwnerId) as never);
         }
       }
       await tx.done;
@@ -713,9 +735,7 @@ async function writeBackupContents(
     const tx = db.transaction(STORE.settings, "readwrite");
     for (const row of backup.data.settings) {
       if (isRecord(row) && typeof row.key === "string") {
-        const suffix = row.key.includes(":")
-          ? row.key.split(":").slice(1).join(":")
-          : row.key;
+        const suffix = row.key.includes(":") ? row.key.split(":").slice(1).join(":") : row.key;
         await tx.store.put({
           ...row,
           ownerId: targetOwnerId,
@@ -785,10 +805,7 @@ export interface MergeResult {
   perStore: Record<string, { added: number; skipped: number; dropped: number }>;
 }
 
-async function existingIds(
-  store: OwnedStore,
-  ownerId: string,
-): Promise<Set<string>> {
+async function existingIds(store: OwnedStore, ownerId: string): Promise<Set<string>> {
   const db = await getDB();
   const rows = await db.getAllFromIndex(store, "byOwner", ownerId);
   return new Set(rows.map((r) => (r as { id: string }).id));
@@ -812,11 +829,7 @@ export async function mergeGuestBackup(
     perStore: {},
   };
 
-  const bump = (
-    name: string,
-    key: "added" | "skipped" | "dropped",
-    n = 1,
-  ): void => {
+  const bump = (name: string, key: "added" | "skipped" | "dropped", n = 1): void => {
     const cur = result.perStore[name] ?? { added: 0, skipped: 0, dropped: 0 };
     cur[key] += n;
     result.perStore[name] = cur;
@@ -843,9 +856,7 @@ export async function mergeGuestBackup(
         bump(store, "dropped");
         continue;
       }
-      await tx.store.put(
-        reownRow(raw as { ownerId?: string }, targetOwnerId) as never,
-      );
+      await tx.store.put(reownRow(raw as { ownerId?: string }, targetOwnerId) as never);
       kept.add(raw.id);
       bump(store, "added");
     }
@@ -882,27 +893,19 @@ export async function mergeGuestBackup(
   const scheduleIds = await insertUniqueRows(
     STORE.scheduleEntries,
     backup.data.schedule_entries,
-    (row) =>
-      typeof row.componentId === "string" && componentIds.has(row.componentId),
+    (row) => typeof row.componentId === "string" && componentIds.has(row.componentId),
   );
-  await insertUniqueRows(
-    STORE.attendanceEvents,
-    backup.data.attendance_events,
-    (row) => {
-      const cid = row.componentId;
-      const sid = row.scheduleEntryId;
-      if (typeof cid !== "string" || !componentIds.has(cid)) return false;
-      if (sid !== null && (typeof sid !== "string" || !scheduleIds.has(sid))) {
-        return false;
-      }
-      return true;
-    },
-  );
+  await insertUniqueRows(STORE.attendanceEvents, backup.data.attendance_events, (row) => {
+    const cid = row.componentId;
+    const sid = row.scheduleEntryId;
+    if (typeof cid !== "string" || !componentIds.has(cid)) return false;
+    if (sid !== null && (typeof sid !== "string" || !scheduleIds.has(sid))) {
+      return false;
+    }
+    return true;
+  });
 
-  const projectIds = await insertUniqueRows(
-    STORE.projects,
-    backup.data.projects,
-  );
+  const projectIds = await insertUniqueRows(STORE.projects, backup.data.projects);
   await insertUniqueRows(
     STORE.projectTasks,
     backup.data.project_tasks,
@@ -914,9 +917,7 @@ export async function mergeGuestBackup(
     const tx = db.transaction(STORE.settings, "readwrite");
     for (const raw of backup.data.settings) {
       if (!isRecord(raw) || typeof raw.key !== "string") continue;
-      const suffix = raw.key.includes(":")
-        ? raw.key.split(":").slice(1).join(":")
-        : raw.key;
+      const suffix = raw.key.includes(":") ? raw.key.split(":").slice(1).join(":") : raw.key;
       const newKey = `${targetOwnerId}:${suffix}`;
       const existing = await tx.store.get(newKey);
       if (existing) {
@@ -936,9 +937,7 @@ export async function mergeGuestBackup(
   // Images.
   {
     const existing = new Set(
-      (await db.getAllFromIndex(STORE.images, "byOwner", targetOwnerId)).map(
-        (i) => i.id,
-      ),
+      (await db.getAllFromIndex(STORE.images, "byOwner", targetOwnerId)).map((i) => i.id),
     );
     const tx = db.transaction(STORE.images, "readwrite");
     for (const img of backup.images) {

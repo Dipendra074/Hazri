@@ -519,6 +519,31 @@
 
 
 /* ---------- Email OTP verification ---------- */
+@property --drive-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes drive-border-flow {
+  to { --drive-border-angle: 1turn; }
+}
+
+.drive-accent-border {
+  background-image: conic-gradient(
+    from var(--drive-border-angle),
+    color-mix(in srgb, var(--primary) 30%, transparent),
+    transparent 24%,
+    transparent 68%,
+    color-mix(in srgb, var(--primary) 30%, transparent)
+  );
+  animation: drive-border-flow 10s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drive-accent-border { animation: none; }
+}
+
 @keyframes hazri-otp-enter {
   from { opacity: 0; transform: translateY(10px) scale(0.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }

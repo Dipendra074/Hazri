@@ -122,9 +122,7 @@ describe("parseAndValidateBackup", () => {
   });
 
   test("rejects malformed JSON", () => {
-    expect(() => parseAndValidateBackup("{not json")).toThrow(
-      BackupValidationError,
-    );
+    expect(() => parseAndValidateBackup("{not json")).toThrow(BackupValidationError);
   });
 
   test("rejects wrong format id", () => {
@@ -187,9 +185,7 @@ describe("readBackupFile", () => {
   test("rejects corrupt gzip", async () => {
     const bad = new Uint8Array([0x1f, 0x8b, 0x00, 0x00, 0x00]);
     const file = new File([bad], "x.hazri", { type: "application/gzip" });
-    await expect(readBackupFile(file)).rejects.toBeInstanceOf(
-      BackupValidationError,
-    );
+    await expect(readBackupFile(file)).rejects.toBeInstanceOf(BackupValidationError);
   });
 
   test("rejects tampered checksum", async () => {
@@ -203,6 +199,7 @@ describe("readBackupFile", () => {
       exportedAt: new Date().toISOString(),
       backupId: "b1",
       ownerId: "owner-1",
+      backupKind: "full",
       checksum: "sha256:deadbeef",
       counts: {
         subjects: 0,
@@ -239,11 +236,25 @@ describe("readBackupFile", () => {
     const file = new File([JSON.stringify(envelope)], "b.json", {
       type: "application/json",
     });
-    await expect(readBackupFile(file)).rejects.toBeInstanceOf(
+    await expect(readBackupFile(file)).rejects.toBeInstanceOf(BackupValidationError);
+    await expect(parseAndVerifyBackup(JSON.stringify(envelope))).rejects.toBeInstanceOf(
       BackupValidationError,
     );
-    await expect(
-      parseAndVerifyBackup(JSON.stringify(envelope)),
-    ).rejects.toBeInstanceOf(BackupValidationError);
+  });
+
+  test("recognizes a timetable-only backup", () => {
+    const backup = parseAndValidateBackup(
+      JSON.stringify({
+        format: BACKUP_FORMAT,
+        formatVersion: CURRENT_FORMAT_VERSION,
+        databaseName: "hazri",
+        databaseVersion: 3,
+        ownerId: "owner-1",
+        backupKind: "timetable",
+        data: {},
+        images: [],
+      }),
+    );
+    expect(backup.backupKind).toBe("timetable");
   });
 });

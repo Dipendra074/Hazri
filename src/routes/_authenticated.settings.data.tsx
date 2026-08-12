@@ -7,6 +7,7 @@ import { useSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import {
   downloadGuestBackup,
+  downloadTimetableBackup,
   readBackupFile,
   replaceGuestBackup,
   mergeGuestBackup,
@@ -46,6 +47,7 @@ function DataBackupPage() {
   const session = useSession();
   const qc = useQueryClient();
   const [importStage, setImportStage] = useState<ImportStage>({ kind: "idle" });
+  const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [busy, setBusy] = useState<"export" | "import" | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -64,12 +66,16 @@ function DataBackupPage() {
     };
   }, [ownerId, statusTick]);
 
-  async function handleExport() {
+  async function handleExport(kind: "full" | "timetable") {
     if (!ownerId) return;
+    setExportPickerOpen(false);
     setBusy("export");
     try {
-      const name = await downloadGuestBackup(ownerId);
-      toast.success(`Backup created: ${name}`);
+      const name =
+        kind === "timetable"
+          ? await downloadTimetableBackup(ownerId)
+          : await downloadGuestBackup(ownerId);
+      toast.success(`${kind === "timetable" ? "Timetable" : "Backup"} created: ${name}`);
     } catch (e) {
       toast.error(toUserMessage(e, "Backup failed"));
     } finally {
@@ -141,15 +147,12 @@ function DataBackupPage() {
           <div className="font-medium">Stored on this device</div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Hazri keeps all your data on this device. Nothing is uploaded unless
-          you connect a backup.
+          Hazri keeps all your data on this device. Nothing is uploaded unless you connect a backup.
         </p>
         <div className="text-xs text-muted-foreground">
           {status
             ? `${status.records} records · last updated ${
-                status.lastUpdatedAt
-                  ? new Date(status.lastUpdatedAt).toLocaleString()
-                  : "—"
+                status.lastUpdatedAt ? new Date(status.lastUpdatedAt).toLocaleString() : "—"
               }`
             : "Checking local data…"}
         </div>
@@ -161,15 +164,15 @@ function DataBackupPage() {
         <div>
           <div className="font-medium">Backup &amp; restore</div>
           <div className="text-xs text-muted-foreground mt-0.5">
-            Export creates a compressed <code>.hazri</code> file with all your
-            local data. Import accepts both <code>.hazri</code> and legacy
+            Export creates a compressed <code>.hazri</code> file with all your local data. Import
+            accepts both <code>.hazri</code> and legacy
             <code> .json</code> backups and lets you merge or replace.
           </div>
         </div>
         <Button
           variant="outline"
           className="w-full rounded-full h-11"
-          onClick={handleExport}
+          onClick={() => setExportPickerOpen(true)}
           disabled={busy !== null}
         >
           <Download className="h-4 w-4 mr-2" />
@@ -192,109 +195,174 @@ function DataBackupPage() {
         />
       </SettingsCard>
 
+      <Dialog open={exportPickerOpen} onOpenChange={setExportPickerOpen}>
+        <DialogContent className="sm:max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Export backup</DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="font-medium text-foreground">Full backup</p>
+                  <p>All local data: timetable, attendance, projects, settings and images.</p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Timetable only</p>
+                  <p>
+                    Course names, icons, components and class timings only. Safe to share with
+                    friends.
+                  </p>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 flex-col sm:flex-col">
+            <Button className="w-full rounded-full" onClick={() => handleExport("full")}>
+              Create full backup
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full rounded-full"
+              onClick={() => handleExport("timetable")}
+            >
+              Export timetable only
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full rounded-full"
+              onClick={() => setExportPickerOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Preview + mode dialog */}
       <Dialog
         open={importStage.kind === "preview"}
         onOpenChange={(o) => !o && setImportStage({ kind: "idle" })}
       >
         <DialogContent className="sm:max-w-sm rounded-3xl">
-          {importStage.kind === "preview" && (() => {
-            const s = summarizeBackup(importStage.backup);
-            const hasLocal = importStage.hasLocal;
-            return (
-              <>
-                <DialogHeader>
-                  <DialogTitle>Import backup</DialogTitle>
-                  <DialogDescription asChild>
-                    <div className="space-y-2 text-sm">
-                      <div className="rounded-xl bg-secondary p-3 text-xs text-muted-foreground space-y-0.5">
-                        <div>
-                          Exported {new Date(s.exportedAt).toLocaleString()}
+          {importStage.kind === "preview" &&
+            (() => {
+              const s = summarizeBackup(importStage.backup);
+              const hasLocal = importStage.hasLocal;
+              return (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Import backup</DialogTitle>
+                    <DialogDescription asChild>
+                      <div className="space-y-2 text-sm">
+                        <div className="rounded-xl bg-secondary p-3 text-xs text-muted-foreground space-y-0.5">
+                          <div>Exported {new Date(s.exportedAt).toLocaleString()}</div>
+                          <div>
+                            App v{s.appVersion} · format v{s.formatVersion}
+                          </div>
+                          <div>
+                            {importStage.backup.backupKind === "timetable"
+                              ? "Timetable only · "
+                              : ""}
+                            {s.courses} courses · {s.scheduleEntries} slots · {s.attendanceEvents}{" "}
+                            events · {s.holidays} holidays
+                          </div>
+                          <div>
+                            {s.projects} projects · {s.todos} to-dos · {s.images} images
+                          </div>
                         </div>
-                        <div>
-                          App v{s.appVersion} · format v{s.formatVersion}
-                        </div>
-                        <div>
-                          {s.courses} courses · {s.scheduleEntries} slots ·{" "}
-                          {s.attendanceEvents} events · {s.holidays} holidays
-                        </div>
-                        <div>
-                          {s.projects} projects · {s.todos} to-dos ·{" "}
-                          {s.images} images
-                        </div>
-                      </div>
-                      {hasLocal ? (
-                        <>
-                          <p className="text-destructive font-medium">
-                            Hazri already contains local data.
-                          </p>
+                        {importStage.backup.backupKind === "timetable" ? (
                           <p>
-                            Importing this backup may combine with or replace
-                            your current courses, attendance history,
-                            schedules, projects, and settings.
+                            This will add the shared courses and class timings to this device. Your
+                            attendance and other data will not change.
                           </p>
-                        </>
-                      ) : (
-                        <p>No existing local data. Safe to import.</p>
-                      )}
-                    </div>
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter className="gap-2 flex-col sm:flex-col">
-                  {hasLocal ? (
-                    <>
-                      <Button
-                        className="w-full rounded-full"
-                        onClick={() => runMerge(importStage.backup)}
-                        disabled={busy === "import"}
-                      >
-                        Merge data
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="w-full rounded-full"
-                        onClick={() =>
-                          setImportStage({
-                            kind: "confirm-replace",
-                            backup: importStage.backup,
-                          })
-                        }
-                        disabled={busy === "import"}
-                      >
-                        Replace current data
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-full"
-                        onClick={() => setImportStage({ kind: "idle" })}
-                        disabled={busy === "import"}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        className="w-full rounded-full"
-                        onClick={() => runReplace(importStage.backup)}
-                        disabled={busy === "import"}
-                      >
-                        {busy === "import" ? "Restoring…" : "Restore backup"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-full"
-                        onClick={() => setImportStage({ kind: "idle" })}
-                        disabled={busy === "import"}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  )}
-                </DialogFooter>
-              </>
-            );
-          })()}
+                        ) : hasLocal ? (
+                          <>
+                            <p className="text-destructive font-medium">
+                              Hazri already contains local data.
+                            </p>
+                            <p>
+                              Importing this backup may combine with or replace your current
+                              courses, attendance history, schedules, projects, and settings.
+                            </p>
+                          </>
+                        ) : (
+                          <p>No existing local data. Safe to import.</p>
+                        )}
+                      </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="gap-2 flex-col sm:flex-col">
+                    {importStage.backup.backupKind === "timetable" ? (
+                      <>
+                        <Button
+                          className="w-full rounded-full"
+                          onClick={() => runMerge(importStage.backup)}
+                          disabled={busy === "import"}
+                        >
+                          {busy === "import" ? "Adding…" : "Add timetable"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full rounded-full"
+                          onClick={() => setImportStage({ kind: "idle" })}
+                          disabled={busy === "import"}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : hasLocal ? (
+                      <>
+                        <Button
+                          className="w-full rounded-full"
+                          onClick={() => runMerge(importStage.backup)}
+                          disabled={busy === "import"}
+                        >
+                          Merge data
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="w-full rounded-full"
+                          onClick={() =>
+                            setImportStage({
+                              kind: "confirm-replace",
+                              backup: importStage.backup,
+                            })
+                          }
+                          disabled={busy === "import"}
+                        >
+                          Replace current data
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full rounded-full"
+                          onClick={() => setImportStage({ kind: "idle" })}
+                          disabled={busy === "import"}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          className="w-full rounded-full"
+                          onClick={() => runReplace(importStage.backup)}
+                          disabled={busy === "import"}
+                        >
+                          {busy === "import" ? "Restoring…" : "Restore backup"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full rounded-full"
+                          onClick={() => setImportStage({ kind: "idle" })}
+                          disabled={busy === "import"}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                  </DialogFooter>
+                </>
+              );
+            })()}
         </DialogContent>
       </Dialog>
 
@@ -307,8 +375,8 @@ function DataBackupPage() {
           <DialogHeader>
             <DialogTitle>Replace all current Hazri data?</DialogTitle>
             <DialogDescription>
-              Your current local data will be replaced with this backup. This
-              cannot be undone unless you have another backup.
+              Your current local data will be replaced with this backup. This cannot be undone
+              unless you have another backup.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -322,8 +390,7 @@ function DataBackupPage() {
             <Button
               variant="destructive"
               onClick={() =>
-                importStage.kind === "confirm-replace" &&
-                runReplace(importStage.backup)
+                importStage.kind === "confirm-replace" && runReplace(importStage.backup)
               }
               disabled={busy === "import"}
             >
@@ -335,15 +402,11 @@ function DataBackupPage() {
 
       {/* Result dialog */}
       <Dialog
-        open={
-          importStage.kind === "result-replace" ||
-          importStage.kind === "result-merge"
-        }
+        open={importStage.kind === "result-replace" || importStage.kind === "result-merge"}
         onOpenChange={(o) => !o && setImportStage({ kind: "idle" })}
       >
         <DialogContent className="sm:max-w-sm rounded-3xl">
-          {(importStage.kind === "result-replace" ||
-            importStage.kind === "result-merge") && (
+          {(importStage.kind === "result-replace" || importStage.kind === "result-merge") && (
             <>
               <DialogHeader>
                 <DialogTitle>Backup imported successfully</DialogTitle>
@@ -351,27 +414,16 @@ function DataBackupPage() {
                   <div className="space-y-2 text-sm">
                     <div className="rounded-xl bg-secondary p-3 text-xs text-muted-foreground space-y-0.5">
                       <div>Courses: {importStage.backup.counts.courses}</div>
-                      <div>
-                        Schedule entries:{" "}
-                        {importStage.backup.counts.scheduleEntries}
-                      </div>
-                      <div>
-                        Attendance records:{" "}
-                        {importStage.backup.counts.attendanceEvents}
-                      </div>
+                      <div>Schedule entries: {importStage.backup.counts.scheduleEntries}</div>
+                      <div>Attendance records: {importStage.backup.counts.attendanceEvents}</div>
                       <div>Projects: {importStage.backup.counts.projects}</div>
                       <div>Todos: {importStage.backup.counts.todos}</div>
                     </div>
                     {importStage.kind === "result-merge" && (
                       <div className="rounded-xl bg-secondary p-3 text-xs text-muted-foreground space-y-0.5">
                         <div>Added: {importStage.merge.added}</div>
-                        <div>
-                          Skipped existing: {importStage.merge.skippedExisting}
-                        </div>
-                        <div>
-                          Dropped (missing links):{" "}
-                          {importStage.merge.droppedDangling}
-                        </div>
+                        <div>Skipped existing: {importStage.merge.skippedExisting}</div>
+                        <div>Dropped (missing links): {importStage.merge.droppedDangling}</div>
                       </div>
                     )}
                   </div>

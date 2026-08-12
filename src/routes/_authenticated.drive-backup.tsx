@@ -331,7 +331,7 @@ function DriveBackupPage() {
           </div>
         </section>
       ) : (
-        <section className={card}>
+        <section className={!status.connected ? `drive-accent-border ${card}` : card}>
           <div
             className={`${plate} space-y-4 ${shake ? "otp-shake" : ""}`}
           >
@@ -438,7 +438,7 @@ function DriveBackupPage() {
                   for a password or client secret.
                 </p>
                 <Button
-                  className="w-full rounded-full h-11"
+                  className="w-full rounded-full h-11 text-white hover:text-white"
                   onClick={handleConnect}
                   disabled={busy !== null}
                 >
