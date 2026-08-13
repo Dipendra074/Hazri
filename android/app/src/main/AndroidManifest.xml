@@ -33,6 +33,24 @@
             android:exported="false"
             android:theme="@style/AppTheme.Authorization" />
 
+        <activity
+            android:name=".HazriUpdateInstallActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/AppTheme.Authorization" />
+
+        <receiver
+            android:name=".HazriUpdateActionReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".HazriUpdateDownloadReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -47,4 +65,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>

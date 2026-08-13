@@ -39,7 +39,10 @@ if (!task) {
   console.error("No JDK found. Set JAVA_HOME or install Android Studio with its bundled JDK.");
   process.exitCode = 1;
 } else {
-  const gradleWrapper = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
+  const gradleWrapper = path.join(
+    ANDROID_DIR,
+    process.platform === "win32" ? "gradlew.bat" : "gradlew",
+  );
   const gradleArgs = task === "--stop" ? [task] : [task, "--no-daemon"];
   const child = spawn(gradleWrapper, gradleArgs, {
     cwd: ANDROID_DIR,

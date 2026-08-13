@@ -1,5 +1,18 @@
 apply plugin: 'com.android.application'
 
+import groovy.json.JsonSlurper
+
+def hazriPackage = new JsonSlurper().parse(file('../../package.json'))
+def hazriVersionName = hazriPackage.version as String
+def hazriVersionParts = hazriVersionName.tokenize('.')
+if (hazriVersionParts.size() != 3 || !hazriVersionParts.every { it ==~ /\d+/ }) {
+    throw new GradleException("package.json version must use MAJOR.MINOR.PATCH, for example 1.0.1")
+}
+def hazriVersionCode =
+    hazriVersionParts[0].toInteger() * 1_000_000 +
+    hazriVersionParts[1].toInteger() * 1_000 +
+    hazriVersionParts[2].toInteger()
+
 android {
     namespace = "com.hazri.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +20,8 @@ android {
         applicationId "com.hazri.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode hazriVersionCode
+        versionName hazriVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -50,4 +63,3 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
-

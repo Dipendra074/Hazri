@@ -7,6 +7,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(HazriDrivePlugin.class);
+        registerPlugin(HazriUpdatePlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

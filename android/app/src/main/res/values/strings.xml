@@ -4,4 +4,6 @@
     <string name="title_activity_main">Hazri</string>
     <string name="package_name">com.hazri.app</string>
     <string name="custom_url_scheme">com.hazri.app</string>
+    <string name="update_channel_name">Application updates</string>
+    <string name="update_channel_description">Notifications when a new Hazri APK is available</string>
 </resources>
