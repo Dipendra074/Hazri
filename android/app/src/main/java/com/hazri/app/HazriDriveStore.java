@@ -53,24 +53,14 @@ final class HazriDriveStore {
 
     static JSONObject writeSnapshot(Context context, String payload, String requestedName) throws Exception {
         JSONObject envelope = new JSONObject(payload);
-        if (!"hazri-backup".equals(envelope.optString("format"))) {
-            throw new IllegalArgumentException("The prepared snapshot is not a Hazri backup.");
-        }
-
-        int formatVersion = envelope.optInt("formatVersion", 0);
-        if (formatVersion < 1 || formatVersion > 2) {
-            throw new IllegalArgumentException("The prepared snapshot version is not supported.");
-        }
+        validateSnapshotEnvelope(envelope);
 
         String checksum = envelope.optString("checksum", "");
-        if (!checksum.startsWith("sha256:") || checksum.length() != 71) {
-            throw new IllegalArgumentException("The prepared snapshot has no valid content hash.");
-        }
-
         String name = requestedName == null || requestedName.trim().isEmpty()
             ? defaultFileName(envelope.optString("exportedAt", ""))
             : requestedName.trim();
 
+        HazriDriveApi.logStage("SNAPSHOT_WRITE_START");
         synchronized (BACKUP_LOCK) {
             AtomicFile atomic = new AtomicFile(snapshotFile(context));
             FileOutputStream output = null;
@@ -94,7 +84,36 @@ final class HazriDriveStore {
                 .putString(LAST_ERROR, "")
                 .apply();
         }
+        HazriDriveApi.logStage("SNAPSHOT_WRITE_SUCCESS");
         return envelope;
+    }
+
+    /**
+     * Android stores and uploads the complete JSON envelope, but does not interpret
+     * its app-data schema. Do not cap the format version here: the WebView validates
+     * the export before handing it to Android, and a new export-only field must not
+     * break both manual and scheduled Drive backups.
+     */
+    static void validateSnapshotEnvelope(JSONObject envelope) {
+        validateSnapshotFields(
+            envelope.optString("format"),
+            envelope.optInt("formatVersion", 0),
+            envelope.optString("checksum", "")
+        );
+    }
+
+    static void validateSnapshotFields(String format, int formatVersion, String checksum) {
+        if (!"hazri-backup".equals(format)) {
+            throw new IllegalArgumentException("The prepared snapshot is not a Hazri backup.");
+        }
+
+        if (formatVersion < 1) {
+            throw new IllegalArgumentException("The prepared snapshot version is not supported.");
+        }
+
+        if (!checksum.startsWith("sha256:") || checksum.length() != 71) {
+            throw new IllegalArgumentException("The prepared snapshot has no valid content hash.");
+        }
     }
 
     static String readSnapshot(Context context) throws Exception {

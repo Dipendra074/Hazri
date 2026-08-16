@@ -3,6 +3,7 @@ package com.hazri.app;
 import android.accounts.Account;
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 import com.google.android.gms.auth.api.identity.AuthorizationClient;
 import com.google.android.gms.auth.api.identity.AuthorizationRequest;
 import com.google.android.gms.auth.api.identity.AuthorizationResult;
@@ -28,6 +29,7 @@ import org.json.JSONObject;
 final class HazriDriveApi {
 
     static final String DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+    private static final String LOG_TAG = "DriveBackup";
     private static final String FILES = "https://www.googleapis.com/drive/v3/files";
     private static final String UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
     private static final String ABOUT = "https://www.googleapis.com/drive/v3/about";
@@ -58,6 +60,26 @@ final class HazriDriveApi {
 
     private HazriDriveApi() {}
 
+    static void logStage(String stage) {
+        Log.i(LOG_TAG, "[DriveBackup] " + stage);
+    }
+
+    static void logFailure(String stage, Throwable error) {
+        String detail = error == null ? "unknown" : error.getClass().getSimpleName();
+        if (error instanceof DriveException) {
+            DriveException driveError = (DriveException) error;
+            detail += " code=" + driveError.code + " status=" + driveError.status
+                + " retryable=" + driveError.retryable;
+        } else if (error instanceof IllegalArgumentException
+            || error instanceof IllegalStateException) {
+            String message = error.getMessage();
+            if (message != null && !message.isEmpty()) {
+                detail += " message=" + message;
+            }
+        }
+        Log.e(LOG_TAG, "[DriveBackup] FAILED stage=" + stage + " error=" + detail);
+    }
+
     static AuthorizationRequest authorizationRequest() {
         return AuthorizationRequest.builder()
             .setRequestedScopes(Collections.singletonList(new Scope(DRIVE_SCOPE)))
@@ -83,6 +105,7 @@ final class HazriDriveApi {
 
     static String accessToken(Context context) throws DriveException {
         try {
+            logStage("AUTH_START");
             AuthorizationResult result = Tasks.await(authorize(context), 30, TimeUnit.SECONDS);
             if (result.hasResolution()) {
                 throw new DriveException(
@@ -101,18 +124,24 @@ final class HazriDriveApi {
                     null
                 );
             }
+            logStage("AUTH_SUCCESS");
             return token;
         } catch (DriveException error) {
+            logFailure("AUTH", error);
             throw error;
         } catch (ExecutionException error) {
-            throw authorizationFailure(error.getCause());
+            DriveException failure = authorizationFailure(error.getCause());
+            logFailure("AUTH", failure);
+            throw failure;
         } catch (Exception error) {
-            throw new DriveException(
+            DriveException failure = new DriveException(
                 "Google Drive authorization is temporarily unavailable.",
                 "AUTH_UNAVAILABLE",
                 true,
                 error
             );
+            logFailure("AUTH", failure);
+            throw failure;
         }
     }
 
@@ -179,15 +208,20 @@ final class HazriDriveApi {
     }
 
     static JSONArray listBackups(Context context) throws Exception {
+        logStage("DRIVE_LOOKUP_START");
         return withAuthorization(context, HazriDriveApi::listBackupsWithToken);
     }
 
     static JSONObject getBackupMeta(Context context, String id) throws Exception {
+        logStage("DRIVE_LOOKUP_START");
         return withAuthorization(context, token -> getBackupMetaWithToken(token, id));
     }
 
     static JSONObject uploadBackup(Context context, String name, String payload) throws Exception {
-        return withAuthorization(context, token -> uploadBackupWithToken(token, name, payload));
+        logStage("DRIVE_UPLOAD_START");
+        JSONObject result = withAuthorization(context, token -> uploadBackupWithToken(token, name, payload));
+        logStage("DRIVE_UPLOAD_SUCCESS");
+        return result;
     }
 
     static String downloadBackup(Context context, String id) throws Exception {

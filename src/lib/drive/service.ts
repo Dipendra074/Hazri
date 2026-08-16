@@ -401,11 +401,20 @@ export async function refreshVersions(): Promise<DriveBackupFileMeta[]> {
 }
 
 async function createBackupPayload() {
+  console.info("[DriveBackup] DATA_EXPORT_START");
   const ownerId = requireOwnerId();
   const backup = await exportGuestBackup(ownerId);
   const payload = JSON.stringify(backup);
   await parseAndVerifyBackup(payload);
+  console.info(`[DriveBackup] DATA_EXPORT_SUCCESS bytes=${payload.length}`);
   return payload;
+}
+
+function logBackupFailure(stage: string, error: unknown) {
+  const candidate = error as { message?: unknown; code?: unknown } | null;
+  const message = typeof candidate?.message === "string" ? candidate.message : "unknown";
+  const code = typeof candidate?.code === "string" ? ` code=${candidate.code}` : "";
+  console.error(`[DriveBackup] FAILED stage=${stage}${code} error=${message}`);
 }
 
 let inFlight: Promise<DriveBackupFileMeta> | null = null;
@@ -415,13 +424,18 @@ export async function backupNow(): Promise<DriveBackupFileMeta> {
   if (inFlight) return inFlight;
   const run = (async () => {
     set({ syncing: "working", lastError: null });
+    let stage = "START";
     try {
       if (!isAndroidApp() && isBrowser && navigator.onLine === false) {
         throw new Error("You're offline. Backup will retry when you reconnect.");
       }
       requireLiveToken();
+      stage = "DATA_EXPORT";
       const payload = await createBackupPayload();
+      stage = "DRIVE_UPLOAD";
+      console.info("[DriveBackup] DRIVE_UPLOAD_START");
       const meta = await uploadBackup(fileName(), payload);
+      console.info("[DriveBackup] DRIVE_UPLOAD_SUCCESS");
       if (isAndroidApp()) {
         nativeDirty = false;
         await hydrateDriveStatus();
@@ -444,6 +458,7 @@ export async function backupNow(): Promise<DriveBackupFileMeta> {
       await refreshVersions();
       return verified;
     } catch (err) {
+      logBackupFailure(stage, err);
       if (isAndroidApp()) {
         await hydrateDriveStatus();
       } else if (err instanceof DriveAuthError) {

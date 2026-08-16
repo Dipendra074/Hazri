@@ -9,5 +9,6 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(HazriDrivePlugin.class);
         registerPlugin(HazriUpdatePlugin.class);
         super.onCreate(savedInstanceState);
+        HazriDriveScheduler.reconcile(getApplicationContext());
     }
 }

@@ -13,6 +13,7 @@ final class HazriDriveBackup {
     private HazriDriveBackup() {}
 
     static JSONObject uploadNow(Context context, String name, String payload) throws Exception {
+        HazriDriveApi.logStage("MANUAL_UPLOAD_START");
         HazriDriveStore.writeSnapshot(context, payload, name);
         return uploadPrepared(context);
     }
@@ -20,12 +21,14 @@ final class HazriDriveBackup {
     static JSONObject uploadPrepared(Context context) throws Exception {
         RUN_LOCK.lock();
         try {
+            HazriDriveApi.logStage("PREPARED_UPLOAD_START");
             String hash = HazriDriveStore.snapshotHash(context);
             JSONObject previous = HazriDriveStore.lastFileMeta(context);
             if (!hash.isEmpty()
                 && hash.equals(HazriDriveStore.lastHash(context))
                 && !previous.optString("id", "").isEmpty()) {
                 HazriDriveStore.recordNoChange(context);
+                HazriDriveApi.logStage("DRIVE_UPLOAD_SKIPPED_NO_CHANGES");
                 previous.put("skipped", true);
                 return previous;
             }
@@ -36,6 +39,7 @@ final class HazriDriveBackup {
             if (!verifiedHash.equals(hash)) {
                 throw new IllegalStateException("The prepared backup hash does not match.");
             }
+            HazriDriveApi.logStage("DATA_EXPORT_SUCCESS");
 
             JSONObject uploaded = HazriDriveApi.uploadBackup(
                 context,
@@ -51,15 +55,18 @@ final class HazriDriveBackup {
             JSONArray files = HazriDriveApi.listBackups(context);
             int retained = rotateOldVersions(context, files);
             HazriDriveStore.recordSuccess(context, verified, hash, retained);
+            HazriDriveApi.logStage("BACKUP_SUCCESS");
             return verified;
         } catch (Exception error) {
             boolean reconnect = error instanceof HazriDriveApi.DriveException
                 && ("AUTH_REQUIRED".equals(((HazriDriveApi.DriveException) error).code)
+                    || "TOKEN_EXPIRED".equals(((HazriDriveApi.DriveException) error).code)
                     || "PERMISSION_DENIED".equals(((HazriDriveApi.DriveException) error).code));
             String message = error instanceof HazriDriveApi.DriveException
                 ? error.getMessage()
                 : "Backup could not be completed. Your device data is unchanged.";
             HazriDriveStore.recordFailure(context, message, reconnect);
+            HazriDriveApi.logFailure("BACKUP", error);
             throw error;
         } finally {
             RUN_LOCK.unlock();

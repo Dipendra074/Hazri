@@ -212,12 +212,15 @@ public final class HazriDrivePlugin extends Plugin {
                 JSObject result = operation.execute();
                 getActivity().runOnUiThread(() -> call.resolve(result));
             } catch (HazriDriveApi.DriveException error) {
+                HazriDriveApi.logFailure("PLUGIN", error);
                 getActivity().runOnUiThread(() -> reject(call, error));
             } catch (IllegalArgumentException error) {
+                HazriDriveApi.logFailure("PLUGIN", error);
                 getActivity().runOnUiThread(() ->
                     call.reject(error.getMessage(), "INVALID_BACKUP")
                 );
             } catch (Exception error) {
+                HazriDriveApi.logFailure("PLUGIN", error);
                 getActivity().runOnUiThread(() ->
                     call.reject(
                         "Google Drive backup could not be completed. Your device data is unchanged.",
